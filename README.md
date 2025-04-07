@@ -1,4 +1,4 @@
-### 🇮🇷 فارسی:
+### 🇮🇷 Music Finder:
 
 <div dir="rtl">
 
@@ -8,6 +8,6 @@
 
 ---
 
-### 🇬🇧 English:
+### 🇬🇧 Music Finder:
 
 **Music Finder** lets users search for their favorite songs by title or artist and download them via a Telegram bot. It displays the track's cover image, title, artist, album, and duration, providing a clean and smooth experience for discovering and downloading music.
