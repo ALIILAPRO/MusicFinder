@@ -258,48 +258,23 @@
         noResults.classList.add('hide');
 
         try {
-          const proxyUrls = [
-            `https://cors-anywhere.herokuapp.com/https://api.deezer.com/search?q=${encodeURIComponent(query)}`,
-            `https://api.allorigins.win/get?url=${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`,
-            `https://corsproxy.io/?${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`
-          ];
-
-          let response;
-          let data;
-
-          for (const url of proxyUrls) {
-            try {
-              response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (response.ok) {
-                data = await response.json();
-                break;
-              }
-            } catch (e) {
-              console.log(`Proxy ${url} failed, trying next...`);
-              continue;
+          // Using GitHub Pages as a proxy
+          const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-
-          if (!response || !response.ok) {
-            throw new Error('All proxies failed');
-          }
-
-          let tracks;
-          if (data.contents) {
-            tracks = JSON.parse(data.contents).data;
-          } else {
-            tracks = data.data;
-          }
-
-          if (tracks && tracks.length > 0) {
-            showResults(tracks);
+          
+          const data = await response.json();
+          
+          if (data.data && data.data.length > 0) {
+            showResults(data.data);
           } else {
             noResults.classList.remove('hide');
           }
@@ -309,7 +284,7 @@
           noResults.innerHTML = `
             <div class="text-red-400 flex items-center justify-center gap-2">
               <i class="fas fa-exclamation-circle"></i>
-              <span>Server connection error. Please try again.</span>
+              <span>Server connection error. Please try again later.</span>
             </div>
           `;
         }
