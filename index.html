@@ -24,7 +24,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding-bottom: 120px; /* Space for fixed footer */
+      padding-bottom: 120px;
     }
     
     .hide { display: none; }
@@ -120,9 +120,24 @@
       100% { transform: scale(1); }
     }
 
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid var(--primary-color);
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     @media (max-width: 640px) {
       body {
-        padding-bottom: 180px; /* More space for footer on mobile */
+        padding-bottom: 180px;
       }
       
       .header h1 {
@@ -133,10 +148,7 @@
         flex-direction: column;
       }
       
-      .search-box input {
-        width: 100%;
-      }
-      
+      .search-box input,
       .search-box button {
         width: 100%;
       }
@@ -145,10 +157,6 @@
         flex-direction: column;
         gap: 1rem;
         text-align: center;
-      }
-      
-      .social-links {
-        justify-content: center;
       }
     }
   </style>
@@ -194,7 +202,11 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div id="noResults" class="hide text-center text-red-400 mb-4 text-lg">
       <i class="fas fa-exclamation-circle mr-2"></i>
-      No results found!
+      <span id="errorMessage">No results found!</span>
+    </div>
+    <div id="loading" class="hide text-center mb-8">
+      <div class="spinner"></div>
+      <p class="mt-2">Searching...</p>
     </div>
     <div id="resultsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
   </div>
@@ -228,7 +240,7 @@
             <a href="https://t.me/aliilapro" target="_blank" class="social-link telegram text-xl hover:text-[#0088cc]">
               <i class="fab fa-telegram"></i>
             </a>
-            <a href="https://instagram.com/@mr.aliilapro" target="_blank" class="social-link instagram text-xl hover:text-[#e4405f]">
+            <a href="https://instagram.com/mr.aliilapro" target="_blank" class="social-link instagram text-xl hover:text-[#e4405f]">
               <i class="fab fa-instagram"></i>
             </a>
           </div>
@@ -237,118 +249,118 @@
     </div>
   </footer>
 
-  <!-- Script -->
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Elements
       const searchInput = document.getElementById('searchInput');
       const searchBtn = document.getElementById('searchBtn');
       const resultsContainer = document.getElementById('resultsContainer');
       const noResults = document.getElementById('noResults');
-
-      searchBtn.addEventListener('click', searchMusic);
-      searchInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') searchMusic();
+      const loading = document.getElementById('loading');
+      const errorMessage = document.getElementById('errorMessage');
+      
+      // API Configuration
+      const API_ENDPOINT = 'https://api-deezer.infinityfreeapp.com/proxy.php';
+      let isSearching = false;
+      
+      // Event Listeners
+      searchBtn.addEventListener('click', handleSearch);
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') handleSearch();
       });
-
-      async function searchMusic() {
+      
+      // Search Function
+      async function handleSearch() {
         const query = searchInput.value.trim();
-        if (query === '') return;
-
+        if (!query || isSearching) return;
+        
+        // Reset UI
         resultsContainer.innerHTML = '';
         noResults.classList.add('hide');
-
+        loading.classList.remove('hide');
+        isSearching = true;
+        
         try {
-          const proxyUrls = [
-            `https://cors-anywhere.herokuapp.com/https://api.deezer.com/search?q=${encodeURIComponent(query)}`,
-            `https://api.allorigins.win/get?url=${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`,
-            `https://corsproxy.io/?${encodeURIComponent(`https://api.deezer.com/search?q=${encodeURIComponent(query)}`)}`
-          ];
-
-          let response;
-          let data;
-
-          for (const url of proxyUrls) {
-            try {
-              response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (response.ok) {
-                data = await response.json();
-                break;
-              }
-            } catch (e) {
-              console.log(`Proxy ${url} failed, trying next...`);
-              continue;
-            }
+          // Check cache first
+          const cacheKey = `music_${query}`;
+          const cachedData = localStorage.getItem(cacheKey);
+          
+          if (cachedData) {
+            const data = JSON.parse(cachedData);
+            displayResults(data);
+            isSearching = false;
+            return;
           }
-
-          if (!response || !response.ok) {
-            throw new Error('All proxies failed');
+          
+          // Fetch from API
+          const response = await fetch(`${API_ENDPOINT}?q=${encodeURIComponent(query)}&i=1`);
+          
+          if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
           }
-
-          let tracks;
-          if (data.contents) {
-            tracks = JSON.parse(data.contents).data;
-          } else {
-            tracks = data.data;
+          
+          const data = await response.json();
+          
+          if (!data.data || data.data.length === 0) {
+            showError('No results found');
+            return;
           }
-
-          if (tracks && tracks.length > 0) {
-            showResults(tracks);
-          } else {
-            noResults.classList.remove('hide');
-          }
-        } catch (err) {
-          console.error('Search error:', err);
-          noResults.classList.remove('hide');
-          noResults.innerHTML = `
-            <div class="text-red-400 flex items-center justify-center gap-2">
-              <i class="fas fa-exclamation-circle"></i>
-              <span>Server connection error. Please try again.</span>
-            </div>
-          `;
+          
+          // Cache results
+          localStorage.setItem(cacheKey, JSON.stringify(data.data));
+          displayResults(data.data);
+          
+        } catch (error) {
+          console.error('Search error:', error);
+          showError(error.message || 'Failed to fetch results');
+        } finally {
+          loading.classList.add('hide');
+          isSearching = false;
         }
       }
-
-      function showResults(tracks) {
-        resultsContainer.innerHTML = '';
-        tracks.forEach(track => {
-          const card = document.createElement('div');
-          const cover = track.album?.cover_medium || 'https://via.placeholder.com/300';
-          const title = track.title || 'No Title';
-          const artist = track.artist?.name || 'Unknown';
-          const album = track.album?.title || 'Unknown';
-          const duration = formatDuration(track.duration);
-
-          card.className = 'music-card p-4 rounded-xl';
-          card.innerHTML = `
+      
+      // Display Results
+      function displayResults(tracks) {
+        resultsContainer.innerHTML = tracks.map(track => `
+          <div class="music-card p-4 rounded-xl">
             <div class="relative group">
-              <img src="${cover}" alt="${title}" class="track-image mb-4">
+              <img src="${track.album?.cover_medium || 'https://via.placeholder.com/300'}" 
+                   alt="${track.title}" 
+                   class="track-image mb-4">
               <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                <a href="https://t.me/ProSpotifyRobot?start=${track.id}" target="_blank" 
+                <a href="https://t.me/ProSpotifyRobot?start=${track.id}" 
+                   target="_blank" 
                    class="download-btn primary-button px-4 py-2 rounded-full inline-flex items-center">
                   <i class="fab fa-telegram mr-2"></i> Download via Telegram
                 </a>
               </div>
             </div>
-            <h3 class="text-lg font-bold mb-1 truncate">${title}</h3>
-            <p class="text-gray-400 text-sm mb-1"><i class="fas fa-user mr-1"></i> ${artist}</p>
-            <p class="text-gray-400 text-sm mb-1"><i class="fas fa-compact-disc mr-1"></i> ${album}</p>
-            <p class="text-gray-400 text-sm"><i class="fas fa-clock mr-1"></i> ${duration}</p>
-          `;
-          resultsContainer.appendChild(card);
-        });
+            <h3 class="text-lg font-bold mb-1 truncate">${track.title || 'No Title'}</h3>
+            <p class="text-gray-400 text-sm mb-1">
+              <i class="fas fa-user mr-1"></i> ${track.artist?.name || 'Unknown Artist'}
+            </p>
+            <p class="text-gray-400 text-sm mb-1">
+              <i class="fas fa-compact-disc mr-1"></i> ${track.album?.title || 'Unknown Album'}
+            </p>
+            <p class="text-gray-400 text-sm">
+              <i class="fas fa-clock mr-1"></i> ${formatDuration(track.duration)}
+            </p>
+          </div>
+        `).join('');
       }
-
+      
+      // Error Handling
+      function showError(message) {
+        errorMessage.textContent = message;
+        noResults.classList.remove('hide');
+      }
+      
+      // Format Duration
       function formatDuration(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        if (!seconds) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
       }
     });
   </script>
