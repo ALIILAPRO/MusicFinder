@@ -292,27 +292,49 @@
             return;
           }
           
-          // Fetch from API
-          const response = await fetch(`${API_ENDPOINT}?q=${encodeURIComponent(query)}&i=1`);
-          
-          if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
-          }
-          
-          const data = await response.json();
-          
-          if (!data.data || data.data.length === 0) {
-            showError('No results found');
-            return;
-          }
-          
-          // Cache results
-          localStorage.setItem(cacheKey, JSON.stringify(data.data));
-          displayResults(data.data);
-          
+          // Replace your try-catch block with this:
+try {
+    // Fetch from API
+    const response = await fetch(`${API_ENDPOINT}?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+    
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('API response:', data);
+    
+    if (!data.data || data.data.length === 0) {
+        showError('No results found');
+        return;
+    }
+    
+    // Cache results
+    localStorage.setItem(cacheKey, JSON.stringify(data.data));
+    displayResults(data.data);
+    
+} catch (error) {
+    console.error('Search error:', error);
+    console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+    });
+    showError(error.message || 'Failed to fetch results');
+} finally {
+    loading.classList.add('hide');
+    isSearching = false;
+}
         } catch (error) {
-          console.error('Search error:', error);
-          showError(error.message || 'Failed to fetch results');
+          console.error('Error fetching data:', error);
+          showError('Failed to fetch results');
         } finally {
           loading.classList.add('hide');
           isSearching = false;
