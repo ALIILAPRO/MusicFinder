@@ -24,7 +24,7 @@
 
 برای نصب مستقیم از سایت افزونه‌های موزیلا، روی لینک زیر کلیک کنید:
 
-👉 [نصب از فایرفاکس](https://addons.mozilla.org/en-US/firefox/addon/music-finder-by-aliilapro/)
+👈 [نصب از فایرفاکس](https://addons.mozilla.org/en-US/firefox/addon/music-finder-by-aliilapro/)
 
 ---
 
