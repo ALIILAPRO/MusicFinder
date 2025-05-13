@@ -32,7 +32,7 @@
 
 از آنجایی که افزونه هنوز در Chrome Web Store منتشر نشده، مراحل زیر را دنبال کنید:
 
-1. فایل ZIP افزونه را از همین مخزن دانلود کنید.
+1. فایل ZIP افزونه را از [همین مخزن](https://github.com/ALIILAPRO/MusicFinder/releases/download/V1.0/MusicFinder.zip) دانلود کنید.
 2. فایل را از حالت فشرده خارج (Extract) کنید.
 3. در مرورگر کروم وارد آدرس `chrome://extensions/` شوید.
 4. گزینه **Developer mode** را فعال کنید (بالا سمت راست).
